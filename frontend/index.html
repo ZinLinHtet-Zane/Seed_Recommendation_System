@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seed Recommendation Assistant</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f3f7f1;
+      color: #243629;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    main { max-width: 850px; margin: 45px auto; padding: 20px; }
+    h1 { margin-bottom: 5px; }
+    .panel, .card {
+      background: white;
+      padding: 24px;
+      border-radius: 14px;
+      margin-top: 20px;
+      border: 1px solid #dce6d8;
+    }
+    label { display: block; font-weight: bold; margin-bottom: 10px; }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 14px;
+      font: inherit;
+      border: 1px solid #aabca5;
+      border-radius: 8px;
+      resize: vertical;
+    }
+    button {
+      background: #28633b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 13px 20px;
+      margin-top: 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .muted { color: #5d6c60; }
+    #status { margin-top: 15px; }
+    h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Seed Recommendation Assistant</h1>
+    <p class="muted">
+      Describe what you want to grow in your own words.
+    </p>
+
+    <form id="recommendation-form" class="panel">
+      <label for="message">Tell us your growing conditions</label>
+      <textarea
+        id="message"
+        required
+        maxlength="2000"
+        placeholder="For example: I want tomatoes for warm weather and harvest within 60 days. My budget is 3 US dollars per seed packet."
+      ></textarea>
+      <p class="muted">
+        Include your crop, season, preferred maturity time, and budget.
+        Catalogue prices are in US dollars per packet.
+      </p>
+      <button id="submit-button" type="submit">Find seeds</button>
+    </form>
+
+    <div id="status" role="status" aria-live="polite"></div>
+    <section id="results" aria-label="Seed recommendations"></section>
+    <section id="notes" aria-label="Things to keep in mind"></section>
+  </main>
+
+  <script>
+    const form = document.getElementById("recommendation-form");
+    const button = document.getElementById("submit-button");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+    const notes = document.getElementById("notes");
+
+    // Display API text safely without interpreting it as HTML.
+    function addText(parent, tag, text) {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      parent.appendChild(element);
+      return element;
+    }
+
+    function showNotes(items) {
+      const uniqueItems = [...new Set(items.filter(Boolean))];
+      if (!uniqueItems.length) return;
+
+      notes.className = "panel";
+      addText(notes, "h3", "Things to keep in mind");
+      const list = document.createElement("ul");
+
+      for (const item of uniqueItems) {
+        addText(list, "li", item);
+      }
+      notes.appendChild(list);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const message = document.getElementById("message").value.trim();
+      if (!message) {
+        status.textContent = "Please describe your growing conditions.";
+        return;
+      }
+
+      button.disabled = true;
+      status.textContent = "Finding seeds and preparing simple explanations…";
+      results.replaceChildren();
+      notes.replaceChildren();
+      notes.className = "";
+
+      try {
+        const response = await fetch("/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            typeof data.detail === "string"
+              ? data.detail
+              : "The request could not be completed. Please try again."
+          );
+        }
+
+        if (data.status === "needs_clarification") {
+          status.textContent = "Please update your message with these details:";
+          const panel = document.createElement("div");
+          panel.className = "panel";
+          for (const question of data.questions || []) {
+            addText(panel, "p", question);
+          }
+          results.appendChild(panel);
+          return;
+        }
+
+        if (data.status !== "success") {
+          status.textContent = data.status === "no_matches"
+            ? "No catalogue matches found. Try changing your conditions."
+            : "Some conditions cannot be evaluated by this version.";
+          showNotes(data.warnings || []);
+          return;
+        }
+
+        status.textContent =
+          `Found ${data.products.length} catalogue matches.`;
+
+        const explanations = new Map(
+          (data.explanation?.products || []).map(product => [
+            product.product_name,
+            product.explanation
+          ])
+        );
+
+        for (const product of data.products) {
+          const card = document.createElement("article");
+          card.className = "card";
+
+          addText(card, "h3", product.product_name);
+          addText(card, "p",
+            `${product.crop_type} • ${product.suitable_season}`
+          );
+
+          const price = product.price_usd_per_packet == null
+            ? "Not specified"
+            : `$${Number(product.price_usd_per_packet).toFixed(2)} USD per packet`;
+
+          addText(card, "p", `Catalogue price: ${price}`);
+          addText(card, "p",
+            `Published maturity: ${
+              product.maturity_period_days
+                ? product.maturity_period_days + " days"
+                : "Not specified"
+            }`
+          );
+
+          const explanation = explanations.get(product.product_name);
+          if (explanation) addText(card, "p", explanation);
+
+          addText(card, "p",
+            `Soil guidance: ${product.soil_type || "Not specified"}`
+          );
+          addText(card, "p",
+            `Water guidance: ${product.water_requirement || "Not specified"}`
+          );
+
+          results.appendChild(card);
+        }
+
+        showNotes([
+          ...(data.warnings || []),
+          ...(data.explanation?.limitations || [])
+        ]);
+      } catch (error) {
+        status.textContent = error.message ||
+          "Could not connect to the server. Please try again.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
