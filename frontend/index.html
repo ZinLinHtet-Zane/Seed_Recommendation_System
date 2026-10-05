@@ -3,417 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Seed Recommendation Assistant</title>
-  <style>
-  :root {
-    --green: #246343;
-    --green-dark: #17472e;
-    --text: #23372b;
-    --muted: #607166;
-    --border: #dce7dd;
-  }
+  <meta name="theme-color" content="#215b3d">
+  <title>SeedGuide — Find seeds for your growing conditions</title>
 
-  * {
-    box-sizing: border-box;
-  }
+  <link rel="stylesheet" href="/static/style.css">
 
-  body {
-    margin: 0;
-    background: #f4f8f3;
-    color: var(--text);
-    font-family: "Segoe UI", Arial, sans-serif;
-    line-height: 1.65;
-  }
-
-  main {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 48px 24px;
-  }
-
-  h1 {
-    margin: 0 0 10px;
-    font-size: clamp(28px, 5vw, 42px);
-    line-height: 1.2;
-    letter-spacing: -1px;
-    color: var(--green-dark);
-  }
-
-  main > .muted {
-    font-size: 18px;
-    margin-bottom: 28px;
-    max-width: 650px;
-  }
-
-  .panel,
-  .card {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 28px;
-    box-shadow: 0 6px 24px rgba(30, 65, 40, 0.04);
-  }
-
-  .panel {
-    margin-top: 24px;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 12px;
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  textarea {
-    display: block;
-    width: 100%;
-    min-height: 155px;
-    padding: 18px;
-    border: 1px solid #aebfaf;
-    border-radius: 12px;
-    background: #fcfdfb;
-    color: var(--text);
-    font: inherit;
-    font-size: 16px;
-    resize: vertical;
-  }
-
-  textarea::placeholder {
-    color: #718076;
-  }
-
-  textarea:focus-visible,
-  button:focus-visible {
-    outline: 3px solid #80b995;
-    outline-offset: 3px;
-  }
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    min-height: 48px;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 10px;
-    background: var(--green);
-    color: white;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-
-  button:hover:not(:disabled) {
-    background: var(--green-dark);
-  }
-
-  button:disabled {
-    opacity: 0.75;
-    cursor: wait;
-  }
-
-  button:disabled::before {
-    content: "";
-    width: 17px;
-    height: 17px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .muted {
-    color: var(--muted);
-  }
-
-  form .muted {
-    font-size: 14px;
-    margin: 14px 0 20px;
-  }
-
-  #status {
-    margin-top: 24px;
-    font-weight: 600;
-  }
-
-  #status:empty {
-    display: none;
-  }
-
-  #results {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-  }
-
-  #results:empty {
-    display: none;
-  }
-
-  #results > .panel {
-    grid-column: 1 / -1;
-    margin: 0;
-  }
-
-  .card {
-    border-top: 4px solid var(--green);
-    padding: 24px;
-    overflow-wrap: anywhere;
-  }
-
-  h3 {
-    margin: 0 0 14px;
-    color: var(--green-dark);
-    font-size: 20px;
-    line-height: 1.4;
-  }
-
-  .card p {
-    margin: 12px 0;
-    font-size: 15px;
-  }
-
-  .card p:first-of-type {
-    display: inline-block;
-    margin-top: 0;
-    padding: 5px 10px;
-    border-radius: 8px;
-    background: #edf5ec;
-    color: var(--green-dark);
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  #notes {
-    background: #fffaf0;
-    border-color: #e9dfc5;
-  }
-
-  #notes:empty {
-    display: none;
-  }
-
-  #notes h3 {
-    color: #65522b;
-    font-size: 18px;
-  }
-
-  #notes ul {
-    padding-left: 22px;
-    margin-bottom: 0;
-  }
-
-  #notes li {
-    margin-bottom: 10px;
-    font-size: 14px;
-  }
-
-  @media (max-width: 600px) {
-    main {
-      padding: 28px 16px;
-    }
-
-    .panel,
-    .card {
-      padding: 20px;
-      border-radius: 14px;
-    }
-
-    #results {
-      grid-template-columns: 1fr;
-    }
-
-    button {
-      width: 100%;
-    }
-
-    main > .muted {
-      font-size: 16px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    button {
-      transition: none;
-    }
-
-    button:disabled::before {
-      animation: none;
-    }
-  }
-</style>
 </head>
+
 <body>
-  <main>
-    <h1>Seed Recommendation Assistant</h1>
-    <p class="muted">
-      Describe what you want to grow in your own words.
+  <header>
+    <div class="container header-content">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 27V15"/>
+            <path d="M16 18C7 18 5 12 5 6c8 0 11 5 11 12Z"/>
+            <path d="M16 14c0-7 4-10 11-10 0 7-4 10-11 10Z"/>
+            <path d="M10 27h12"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">SeedGuide</div>
+          <div class="brand-description">Seed recommendation assistant</div>
+        </div>
+      </div>
+      <span class="header-note">Your growing conditions. Clear seed choices.</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <p class="eyebrow">Plan your next planting</p>
+    <h1>Find seeds for your growing conditions.</h1>
+    <p class="intro">
+      Tell us what you want to grow. We’ll look for catalogue matches
+      and explain your options in simple words.
     </p>
 
-    <form id="recommendation-form" class="panel">
-      <label for="message">Tell us your growing conditions</label>
-      <textarea
-        id="message"
-        required
-        maxlength="2000"
-        placeholder="For example: I want tomatoes for warm weather and harvest within 60 days. My budget is 3 US dollars per seed packet."
-      ></textarea>
-      <p class="muted">
-        Include your crop, season, preferred maturity time, and budget.
-        Catalogue prices are in US dollars per packet.
-      </p>
-      <button id="submit-button" type="submit">Find seeds</button>
-    </form>
+    <div class="input-layout">
+      <form id="recommendation-form" class="panel input-panel">
+        <label for="message">What would you like to grow?</label>
+        <p class="help" id="input-help">
+          Write a short message. You don’t need technical words.
+        </p>
 
-    <div id="status" role="status" aria-live="polite"></div>
-    <section id="results" aria-label="Seed recommendations"></section>
-    <section id="notes" aria-label="Things to keep in mind"></section>
+        <textarea
+          id="message"
+          required
+          maxlength="2000"
+          aria-describedby="input-help"
+          placeholder="I want tomatoes for warm weather, with a published maturity under 60 days after transplanting. My budget is 3 USD per packet."
+        ></textarea>
+
+        <p class="examples-label">Try an example</p>
+        <div class="examples">
+          <button type="button" class="example" data-example="tomato">
+            Tomatoes for warm weather
+          </button>
+          <button type="button" class="example" data-example="lettuce">
+            Lettuce for cool weather
+          </button>
+          <button type="button" class="example" data-example="carrot">
+            Carrots for clay soil
+          </button>
+        </div>
+
+        <div class="actions">
+          <button id="submit-button" type="submit" class="primary">
+            <span id="spinner" class="spinner" hidden aria-hidden="true"></span>
+            <span id="button-label">Find seed options</span>
+          </button>
+          <button id="reset-button" type="button" class="secondary">
+            Start again
+          </button>
+        </div>
+      </form>
+
+      <aside class="guide">
+        <h2>Helpful details to include</h2>
+        <ul>
+          <li>The crop you want to grow</li>
+          <li>Warm or cool growing weather</li>
+          <li>Your soil, if you know it</li>
+          <li>Your preferred maturity time</li>
+          <li>Your budget in USD per packet</li>
+        </ul>
+        <p>
+          This catalogue uses US wholesale prices.
+          Local prices and growing suitability can differ.
+        </p>
+      </aside>
+    </div>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <section id="clarification" class="panel clarification"
+             aria-label="Details needed" hidden></section>
+
+    <section id="recommendations" aria-labelledby="results-title" hidden>
+      <div class="results-header">
+        <h2 id="results-title">Your seed options</h2>
+        <p id="results-description"></p>
+        <div id="conditions" class="conditions"></div>
+      </div>
+      <div id="results" class="cards"></div>
+    </section>
+
+    <section id="notes" class="notes" aria-label="Important information"
+             hidden></section>
   </main>
 
-  <script>
-    const form = document.getElementById("recommendation-form");
-    const button = document.getElementById("submit-button");
-    const status = document.getElementById("status");
-    const results = document.getElementById("results");
-    const notes = document.getElementById("notes");
-
-    // Display API text safely without interpreting it as HTML.
-    function addText(parent, tag, text) {
-      const element = document.createElement(tag);
-      element.textContent = text;
-      parent.appendChild(element);
-      return element;
-    }
-
-    function showNotes(items) {
-      const uniqueItems = [...new Set(items.filter(Boolean))];
-      if (!uniqueItems.length) return;
-
-      notes.className = "panel";
-      addText(notes, "h3", "Things to keep in mind");
-      const list = document.createElement("ul");
-
-      for (const item of uniqueItems) {
-        addText(list, "li", item);
-      }
-      notes.appendChild(list);
-    }
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const message = document.getElementById("message").value.trim();
-      if (!message) {
-        status.textContent = "Please describe your growing conditions.";
-        return;
-      }
-
-      button.disabled = true;
-      status.textContent = "Finding seeds and preparing simple explanations…";
-      results.replaceChildren();
-      notes.replaceChildren();
-      notes.className = "";
-
-      try {
-        const response = await fetch("/recommend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            typeof data.detail === "string"
-              ? data.detail
-              : "The request could not be completed. Please try again."
-          );
-        }
-
-        if (data.status === "needs_clarification") {
-          status.textContent = "Please update your message with these details:";
-          const panel = document.createElement("div");
-          panel.className = "panel";
-          for (const question of data.questions || []) {
-            addText(panel, "p", question);
-          }
-          results.appendChild(panel);
-          return;
-        }
-
-        if (data.status !== "success") {
-          status.textContent = data.status === "no_matches"
-            ? "No catalogue matches found. Try changing your conditions."
-            : "Some conditions cannot be evaluated by this version.";
-          showNotes(data.warnings || []);
-          return;
-        }
-
-        status.textContent =
-          `Found ${data.products.length} catalogue matches.`;
-
-        const explanations = new Map(
-          (data.explanation?.products || []).map(product => [
-            product.product_name,
-            product.explanation
-          ])
-        );
-
-        for (const product of data.products) {
-          const card = document.createElement("article");
-          card.className = "card";
-
-          addText(card, "h3", product.product_name);
-          addText(card, "p",
-            `${product.crop_type} • ${product.suitable_season}`
-          );
-
-          const price = product.price_usd_per_packet == null
-            ? "Not specified"
-            : `$${Number(product.price_usd_per_packet).toFixed(2)} USD per packet`;
-
-          addText(card, "p", `Catalogue price: ${price}`);
-          addText(card, "p",
-            `Published maturity: ${
-              product.maturity_period_days
-                ? product.maturity_period_days + " days"
-                : "Not specified"
-            }`
-          );
-
-          const explanation = explanations.get(product.product_name);
-          if (explanation) addText(card, "p", explanation);
-
-          addText(card, "p",
-            `Soil guidance: ${product.soil_type || "Not specified"}`
-          );
-          addText(card, "p",
-            `Water guidance: ${product.water_requirement || "Not specified"}`
-          );
-
-          results.appendChild(card);
-        }
-
-        showNotes([
-          ...(data.warnings || []),
-          ...(data.explanation?.limitations || [])
-        ]);
-      } catch (error) {
-        status.textContent = error.message ||
-          "Could not connect to the server. Please try again.";
-      } finally {
-        button.disabled = false;
-      }
-    });
-  </script>
+  <footer>
+    <div class="container">
+      Catalogue matches help you compare options.
+      Harvest timing and successful growth depend on your conditions.
+    </div>
+  </footer>
+  <script src="/static/script.js?v=2" defer></script>
 </body>
 </html>

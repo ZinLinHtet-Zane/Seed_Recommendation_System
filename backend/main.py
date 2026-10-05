@@ -5,10 +5,18 @@ from fastapi.responses import FileResponse
 from condition_extractor import extract_conditions
 from recommender import SeedRecommender
 from explanation_generator import explain_recommendations
+from fastapi.staticfiles import StaticFiles
+import json
+from typing import Literal
 
 
 app = FastAPI(title="Seed Recommendation API")
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+app.mount(
+    "/static",
+    StaticFiles(directory=str(FRONTEND_DIR)),
+    name="static",
+)
 
 
 @app.get("/", response_class=FileResponse)
@@ -18,8 +26,17 @@ def homepage():
 recommender = SeedRecommender()
 
 
+class ConversationMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
 class RecommendationRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
+    history: list[ConversationMessage] = Field(
+        default_factory=list,
+        max_length=12,
+    )
 
 
 @app.get("/health")
@@ -39,7 +56,22 @@ def recommend(request: RecommendationRequest):
 
     # Understand the farmer's message.
     try:
-        conditions = extract_conditions(message)
+        conversation = [
+            item.model_dump()
+            for item in request.history
+        ]
+
+        conversation.append({
+            "role": "user",
+            "content": message,
+        })
+
+        conditions = extract_conditions(
+            json.dumps(
+                {"conversation": conversation},
+                ensure_ascii=False,
+            )
+        )
     except Exception:
         raise HTTPException(
             status_code=502,
